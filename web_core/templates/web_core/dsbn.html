@@ -1,0 +1,98 @@
+{% extends 'web_core/main.html' %}
+
+{% block content %}
+<style>
+    .col-md-2 {
+        padding: 0;
+    }
+
+    .col-md-10 {
+        margin-top: 50px;
+    }
+
+    .card-body {
+        padding-bottom: 0px;
+    }
+
+    .table-title {
+        text-align: center;
+    }
+
+    .table th,
+    .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .small-content {
+        width: 150px;
+    }
+
+    .mid-content {
+        width: 250px;
+    }
+
+    .large-content {
+        width: 450px;
+    }
+
+    .table-head {
+        color: #ffff;
+        background-color: #399;
+    }
+
+    .btn {
+        margin: 0 5px;
+    }
+
+    .btn.edit-btn {
+        font-weight: bold;
+        background-color: rgb(255, 204, 0);
+    }
+
+    .btn.del-btn {
+        font-weight: bold;
+        background-color: rgb(255, 37, 37)
+    }
+
+    .btn:hover {
+        background-color: #fff;
+        color: #399;
+        border-color: #399;
+        border-width: 1px;
+    }
+</style>
+<div class="row">
+    <div class="col-md-2">
+        {% include 'web_core/sidebar.html' %}
+    </div>
+    <div class="col-md-10">
+        <h2 class="table-title" style>DANH SÁCH BỆNH NHÂN</h2>
+        <div class="card card-body">
+            <table class='table table-sm'>
+                <tr class="table-head">
+                    <th class="small-content">ID</th>
+                    <th class="mid-content">Họ tên</th>
+                    <th class="small-content">Giới tính</th>
+                    <th class="small-content">Năm sinh</th>
+                    <th class="large-content">Địa chỉ</th>
+                    <th class="mid-content">Thao tác</th>
+                </tr>
+                {% for benhnhan in dsbn %}
+                <tr>
+                    <td class="small-content">{{benhnhan.id}}</td>
+                    <td class="mid-content">{{benhnhan.ho_ten}}</td>
+                    <td class="small-content">{{benhnhan.gioi_tinh}}</td>
+                    <td class="small-content">{{benhnhan.ngay_sinh|date:"d/m/Y"}}</td>
+                    <td class="large-content">{{benhnhan.dia_chi}}</td>
+                    <td>
+                        <a class="btn edit-btn" href="{% url 'quanli_sua_benhnhan' benhnhan.id %}">Chỉnh sửa</a>
+                        <a class="btn del-btn" href="{% url 'quanli_xoa_benhnhan' benhnhan.id %}">Xoá</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

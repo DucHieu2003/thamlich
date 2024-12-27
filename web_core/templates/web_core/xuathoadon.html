@@ -1,0 +1,87 @@
+{% extends 'web_core/main.html' %}
+
+{% block content %}
+<style>
+    .col-md-2 {
+        padding: 0;
+    }
+
+    .col-md-10 {
+        margin-top: 50px;
+    }
+
+    .card-body {
+        padding-bottom: 0px;
+    }
+
+    .table-title {
+        text-align: center;
+    }
+
+    .table th,
+    .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .small-content {
+        width: 150px;
+    }
+
+    .mid-content {
+        width: 250px;
+    }
+
+    .large-content {
+        width: 450px;
+    }
+
+    .table-head {
+        color: #ffff;
+        background-color: #399;
+    }
+
+    .btn.add-btn {
+        font-weight: bold;
+        color: #fff;
+        background-color: #399;
+    }
+
+    .btn:hover {
+        background-color: #fff;
+        color: #399;
+        border-color: #399;
+        border-width: 1px;
+    }
+</style>
+<div class="row">
+    <div class="col-md-2">
+        {% include 'web_core/sidebar.html' %}
+    </div>
+    <div class="col-md-10">
+        <h2 class="table-title" style>XUẤT HÓA ĐƠN</h2>
+        <div class="card card-body">
+            <table class='table table-sm'>
+                <tr class="table-head">
+                    <th class="small-content">STT</th>
+                    <th class="mid-content">Tên bệnh nhân</th>
+                    <th class="small-content">ID phiếu khám</th>
+                    <th class="small-content">Ngày khám</th>
+                    <th class="small-content">Thao tác</th>
+                </tr>
+                {% for index, phieukham in enum_xhd %}
+                <tr>
+                    <td class="small-content">{{index}}</td>
+                    <td class="mid-content">{{phieukham.id_benhnhan.ho_ten}} </td>
+                    <td class="small-content">{{phieukham.id}}</td>
+                    <td class="small-content">{{phieukham.ngay_kham|date:"d/m/Y"}}</td>
+                    <td class="small-content">
+                        <a class='btn add-btn' href="{% url 'quanli_xuathoadon_hoadon' phieukham.id%}">Xuất</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

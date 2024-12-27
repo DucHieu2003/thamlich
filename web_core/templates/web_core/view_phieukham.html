@@ -1,0 +1,94 @@
+{% extends 'web_core/main.html' %}
+
+{% block content %}
+
+<style>
+    .col-md-2 {
+        padding: 0;
+    }
+
+    .col-md-10 {
+        margin-top: 50px;
+    }
+
+    .card-body {
+        padding-bottom: 0px;
+    }
+
+    .table-title {
+        text-align: center;
+    }
+
+    .table th,
+    .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .small-content {
+        width: 150px;
+    }
+
+    .mid-content {
+        width: 250px;
+    }
+
+    .large-content {
+        width: 450px;
+    }
+
+    .table-head {
+        color: #ffff;
+        background-color: #399;
+    }
+</style>
+<div class="row">
+    <div class="col-md-2">
+        {% include 'web_core/sidebar.html' %}
+
+    </div>
+    <div class="col-md-10">
+        <h2 class="table-title" style>CHI TIẾT PHIẾU KHÁM</h2>
+        <div class="card card-body">
+            <table class="table table-sm">
+                <tr>
+                    <th class="mid-content">Họ tên</th>
+                    <td class="mid-content">{{phieukham.id_benhnhan.ho_ten}}</td>
+                    <th class="small-content"></th>
+                    <th class="small-content"></th>
+                    <th class="small-content"></th>
+                    <th class="small-content">Ngày khám</th>
+                    <td class="small-content">{{phieukham.ngay_kham|date:"d/m/Y"}}</td>
+                </tr>
+                <tr>
+                    <th class="mid-content">Triệu chứng</th>
+                    <td class="mid-content">{{phieukham.trieu_chung}}</td>
+                    <th class="small-content"></th>
+                    <th class="small-content"></th>
+                    <th class="small-content"></th>
+                    <th class="mid-content">Dự đoán loại bệnh</th>
+                    <td class="mid-content">{{phieukham.loai_benh.ten}}</td>
+                </tr>
+            </table>
+            <table class="table table-sm">
+                <tr class="table-head">
+                    <th class="small-content">STT</th>
+                    <th class="mid-content">Thuốc</th>
+                    <th class="small-content">Đơn vị</th>
+                    <th class="small-content">Số lượng</th>
+                    <th class="mid-content">Cách dùng</th>
+                </tr>
+                {% for index, sdthuoc in enum_dsthuoc %}
+                <tr>
+                    <td class="small-content">{{index}}</td>
+                    <td class="mid-content">{{sdthuoc.thuoc}}</td>
+                    <td class="small-content">{{sdthuoc.don_vi}}</td>
+                    <td class="small-content">{{sdthuoc.soluong}}</td>
+                    <td class="mid-content">{{sdthuoc.cach_dung}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

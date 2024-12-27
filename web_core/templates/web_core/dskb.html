@@ -1,0 +1,138 @@
+{% extends 'web_core/main.html' %}
+
+{% block content %}
+<style>
+    .row.sub {
+        margin-top: 32px;
+    }
+
+    .col-md-2 {
+        padding: 0;
+    }
+
+    .col-md-10 {
+        margin-top: 50px;
+    }
+
+    .card-body {
+        padding-bottom: 0px;
+    }
+
+    .table-title {
+        text-align: center;
+    }
+
+    .table th,
+    .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    .small-content {
+        width: 150px;
+    }
+
+    .mid-content {
+        width: 250px;
+    }
+
+    .large-content {
+        width: 450px;
+    }
+
+    .table-head {
+        color: #ffff;
+        background-color: #399;
+    }
+
+    .btn-text-right {
+        text-align: right;
+    }
+
+    .btn.add-btn {
+        font-weight: bold;
+        margin-bottom: 8px;
+        margin-right: 20px;
+        color: #fff;
+        background-color: #399;
+    }
+
+    .btn:hover {
+        background-color: #fff;
+        color: #399;
+        border-color: #399;
+        border-width: 1px;
+    }
+
+    input[type=submit] {
+        font-weight: bold;
+        background-color: #399;
+        border-radius: 6px;
+        border-width: 0px;
+        color: white;
+        padding: 4px 14px;
+        margin: auto;
+        margin-top: 5px;
+    }
+
+    .errorlist {
+        font-weight: bold;
+        color: red;
+        list-style-type: none;
+    }
+</style>
+<div class="row">
+    <div class="col-md-2">
+        {% include 'web_core/sidebar.html' %}
+    </div>
+    <div class="col-md-10">
+        <div class='row' style="padding-bottom: 20px;">
+            <div class='col'>
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {{form.ngay_kham.label_tag}}
+                    {{form.ngay_kham}}
+                    <input type="submit" value="Chọn">
+                </form>
+                {{form.ngay_kham.errors}}
+
+            </div>
+        </div>
+        <h2 class="table-title" style>DANH SÁCH KHÁM BỆNH NGÀY <span style="font-weight: bold">{{today}}</span></h2>
+        <div class="row sub">
+            <div class="col-md-4">
+                <span style="padding-left: 25px;">Số bệnh nhân đã khám: {{count}}</span>
+            </div>
+            <div class="col-md-4">
+                <span>Số bệnh nhân tối đa: {{max_benhnhan}}</span>
+            </div>
+            <div class="col-md-4">
+                <div class="btn-text-right">
+                    <a class='btn add-btn' href="{% url 'quanli_them_benhnhan'%}">Thêm bệnh nhân</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body">
+            <table class='table table-sm'>
+                <tr class="table-head">
+                    <th class="small-content">STT</th>
+                    <th class="mid-content">Họ tên</th>
+                    <th class="small-content">Giới tính</th>
+                    <th class="small-content">Năm sinh</th>
+                    <th class="large-content">Địa chỉ</th>
+                </tr>
+                {% for index, benhnhan in enum_dskb %}
+                <tr>
+                    <td class="small-content">{{index}}</td>
+                    <td class="mid-content">{{benhnhan.ho_ten}}</td>
+                    <td class="small-content">{{benhnhan.gioi_tinh}}</td>
+                    <td class="small-content">{{benhnhan.ngay_sinh|date:"d/m/Y"}}</td>
+                    <td class="large-content">{{benhnhan.dia_chi}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
