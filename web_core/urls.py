@@ -53,4 +53,9 @@ urlpatterns = [
     path('thaydoi/thuoc/them', views.thaydoi_thuoc_them, name='quanli_thaydoi_thuoc_them'),
     path('thaydoi/thuoc/xoa/<str:id>', views.thaydoi_thuoc_xoa, name='quanli_thaydoi_thuoc_xoa'),
     path('thaydoi/thuoc/sua/<str:id>', views.thaydoi_thuoc_sua, name='quanli_thaydoi_thuoc_sua'),
+    path('register/', views.registerPage, name='register'),
+    path('book-appointment/', views.book_appointment, name='book_appointment'),
+    path('view-appointments/', views.view_appointments, name='view_appointments'),
+    path('delete-appointment/<int:pk>/', views.delete_appointment, name='delete_appointment'),
+    path('update-appointment/<int:pk>/', views.update_appointment, name='update_appointment'),
 ]

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from shortuuid.django_fields import ShortUUIDField
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django import forms
 
 
 # Create your models here.
@@ -83,3 +84,22 @@ class THAMSO(models.Model):
 
     def __str__(self):
         return self.loai
+    
+class Appointment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Người dùng")
+    date = models.DateField(verbose_name="Ngày khám")
+    time = models.TimeField(verbose_name="Giờ khám")
+    reason = models.TextField(verbose_name="Lý do khám", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Ngày tạo")
+
+    def __str__(self):
+        return f"Lịch khám: {self.user.username} - {self.date} {self.time}"
+    
+class PaymentForm(forms.Form):
+
+    order_id = forms.CharField(max_length=250)
+    order_type = forms.CharField(max_length=20)
+    amount = forms.IntegerField()
+    order_desc = forms.CharField(max_length=100)
+    bank_code = forms.CharField(max_length=20, required=False)
+    language = forms.CharField(max_length=2)

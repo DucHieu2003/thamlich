@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Ký</title>
+</head>
+<body>
+    <h2>Đăng Ký Tài Khoản</h2>
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Đăng Ký</button>
+    </form>
+
+    <p>Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập</a></p>
+</body>
+</html>

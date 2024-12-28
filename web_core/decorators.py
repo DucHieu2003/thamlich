@@ -18,8 +18,8 @@ def allowed_users(allowed_roles=[]):
 def admin_only(view_func):
     def wrapper_function(request, *args, **kwargs):
         # Kiểm tra nếu user là superuser
-        if request.user.is_superuser:
-            return view_func(request, *args, **kwargs)  # Cho phép truy cập
+        # if request.user.is_superuser:
+        #     return view_func(request, *args, **kwargs)  # Cho phép truy cập
 
         group = None
         if request.user.groups.exists():
