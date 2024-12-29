@@ -1,0 +1,38 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Danh sách Người Dùng</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên Đăng Nhập</th>
+            <th>Email</th>
+            <th>Vai Trò</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+                {% if user.userrole.role %}
+                {{ user.userrole.role.name }}
+                {% else %}
+                Chưa có
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'assign_role' user.id %}" class="btn btn-sm btn-info">Gán Vai Trò</a>
+                <a href="{% url 'manage_user_permissions' user.id %}" class="btn btn-sm btn-warning">Phân Quyền</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

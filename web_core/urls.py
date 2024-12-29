@@ -58,4 +58,27 @@ urlpatterns = [
     path('view-appointments/', views.view_appointments, name='view_appointments'),
     path('delete-appointment/<int:pk>/', views.delete_appointment, name='delete_appointment'),
     path('update-appointment/<int:pk>/', views.update_appointment, name='update_appointment'),
+    path('add-patient/', views.add_patient_from_appointment, name='add_patient_from_appointment'),
+    
+        # Quản lý Vai Trò và Phân Quyền
+    path('roles/', views.role_list, name='role_list'),  # Danh sách vai trò
+    path('roles/add/', views.add_role, name='add_role'),  # Thêm vai trò mới
+    path('roles/edit/<int:id>/', views.edit_role, name='edit_role'),  # Chỉnh sửa vai trò
+    path('roles/delete/<int:id>/', views.delete_role, name='delete_role'),  # Xóa vai trò
+    path('roles/assign/<int:user_id>/', views.assign_role, name='assign_role'),  # Gán vai trò cho người dùng
+
+    # Quản lý Người Dùng
+    path('users/', views.user_list, name='user_list'),  # Danh sách người dùng
+    path('users/permissions/<int:user_id>/', views.manage_user_permissions, name='manage_user_permissions'),  # Quản lý quyền người dùng
+
+    # Trang phân quyền (Tùy chỉnh)
+    path('permissions/', views.manage_permissions, name='manage_permissions'),  # Quản lý trực tiếp các quyền
+    
+    # url('pay', views.index, name='index'),
+    # url('payment', views.payment, name='payment'),
+    # url('payment_ipn$', views.payment_ipn, name='payment_ipn'),
+    # url('payment_return$', views.payment_return, name='payment_return'),
+    # url('query$', views.query, name='query'),
+    # url('refund$', views.refund, name='refund'),
+    # url('admin/', site.urls),
 ]

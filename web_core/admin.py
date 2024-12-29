@@ -6,3 +6,7 @@ admin.site.register(DANHMUC)
 admin.site.register(PHIEUKHAM)
 admin.site.register(SUDUNGTHUOC)
 admin.site.register(THAMSO)
+admin.site.register(Appointment)
+admin.site.register(Role)
+admin.site.register(UserRole)
+

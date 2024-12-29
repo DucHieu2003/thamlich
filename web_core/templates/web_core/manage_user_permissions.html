@@ -1,0 +1,22 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Quản lý Quyền của {{ user.username }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="permissions">Chọn Quyền</label>
+        <select name="permissions" multiple class="form-control" size="10">
+            {% for permission in permissions %}
+            <option value="{{ permission.id }}" {% if permission in user.user_permissions.all %}selected{% endif %}>
+                {{ permission.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Cập Nhật</button>
+    <a href="{% url 'user_list' %}" class="btn btn-secondary">Quay lại</a>
+</form>
+
+{% endblock %}

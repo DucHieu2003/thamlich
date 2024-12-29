@@ -1,0 +1,51 @@
+{% extends "web_core/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header bg-primary text-white text-center">
+            <h3>Thêm bệnh nhân từ lịch khám</h3>
+        </div>
+        <div class="card-body">
+            {% if appointments %}
+            <form method="POST">
+                {% csrf_token %}
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Chọn</th>
+                            <th>Tên</th>
+                            <th>Ngày sinh</th>
+                            <th>Số điện thoại</th>
+                            <th>Ngày khám</th>
+                            <th>Lý do khám</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="selected_appointments" value="{{ appointment.id }}">
+                            </td>
+                            <td>{{ appointment.name }}</td>
+                            <td>{{ appointment.date_of_birth|date:"d/m/Y" }}</td>
+                            <td>{{ appointment.phone_number }}</td>
+                            <td>{{ appointment.date|date:"d/m/Y" }}</td>
+                            <td>{{ appointment.reason }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary">Thêm bệnh nhân</button>
+                </div>
+            </form>
+            {% else %}
+            <div class="alert alert-info text-center">
+                Không có lịch khám nào của guest.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

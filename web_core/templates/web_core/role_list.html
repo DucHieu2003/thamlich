@@ -1,0 +1,31 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Danh sách Vai Trò</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Tên Vai Trò</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for role in roles %}
+        <tr>
+            <td>{{ role.id }}</td>
+            <td>{{ role.name }}</td>
+            <td>
+                <a href="{% url 'edit_role' role.id %}" class="btn btn-primary btn-sm">Chỉnh sửa</a>
+                <a href="{% url 'delete_role' role.id %}" class="btn btn-danger btn-sm"
+                   onclick="return confirm('Bạn có chắc muốn xóa vai trò này không?');">Xóa</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{% url 'add_role' %}" class="btn btn-success">Thêm Vai Trò</a>
+
+{% endblock %}

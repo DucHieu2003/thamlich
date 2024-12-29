@@ -110,8 +110,13 @@
                 <a class="nav-item nav-link my-nav-item {% if url_name == 'book_appointment' %}my-nav-active{% endif %}"
                 href="{% url 'book_appointment' %}">Đặt lịch khám</a>
             <a href="{% url 'view_appointments' %}" class="nav-item nav-link my-nav-item view-appointment">
-                    Xem lịch khám</a>
-                
+                    Xem lịch khám</a>   
+
+            <a class="nav-item nav-link my-nav-item {% if url_name == 'role_list' %}my-nav-active{% endif %}"
+                    href="{% url 'role_list' %}">Vai trò</a>
+            <a class="nav-item nav-link my-nav-item {% if url_name == 'user_list' %}my-nav-active{% endif %}"
+                    href="{% url 'user_list' %}">Người dùng</a>
+                 
 
         </div>
         {% endwith %}

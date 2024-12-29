@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import Group
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from .decorators import admin_only
 
 #utils
@@ -28,8 +28,21 @@ from django.contrib import messages
 from .forms import AppointmentForm
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden
+from django.utils.timezone import now
 
 # Create your views here.
+
+# Kiểm tra quyền admin hoặc lễ tân
+def admin_or_receptionist(user):
+    return user.groups.filter(name__in=['admin', 'receptionist']).exists()
+
+
+# Helper: Kiểm tra lịch hẹn của user hoặc admin
+def get_appointments_by_role(user):
+    if user.groups.filter(name='admin').exists():
+        return Appointment.objects.all()
+    return Appointment.objects.filter(user=user)
+
 
 # Authentication
 def loginPage(request):
@@ -498,13 +511,13 @@ def view_appointments(request):
     # Kiểm tra nhóm người dùng
     user_group = request.user.groups.first()
 
-    # Nếu là admin, lấy tất cả lịch khám
+
     if user_group and user_group.name == 'admin':
         appointments = Appointment.objects.all()
 
-    # Nếu là customer, lấy lịch của họ và của guest
+    
     elif user_group and user_group.name == 'customer':
-        appointments = Appointment.objects.filter(user=request.user) | Appointment.objects.filter(user__groups__name='guest')
+        appointments = Appointment.objects.all()
 
     # Nếu là guest, chỉ lấy lịch của chính họ
     else:
@@ -513,17 +526,15 @@ def view_appointments(request):
     context = {'appointments': appointments}
     return render(request, 'web_core/view_appointments.html', context)
 
-
 @login_required
 def delete_appointment(request, pk):
-    # Lấy lịch khám theo ID và đảm bảo lịch thuộc về người dùng hiện tại
-    appointment = get_object_or_404(Appointment, pk=pk, user=request.user)
-
-    # Xóa lịch khám
-    appointment.delete()
-
-    messages.success(request, "Lịch khám đã được xóa thành công!")
-    return redirect('view_appointments')  
+    appointment = Appointment.objects.filter(id=pk).first()
+    if appointment:
+        appointment.delete()
+        messages.success(request, "Lịch hẹn đã được xóa thành công.")
+    else:
+        messages.error(request, "Không tìm thấy lịch hẹn.")
+    return redirect('view_appointments')
 
 @login_required
 def update_appointment(request, pk):
@@ -544,274 +555,188 @@ def update_appointment(request, pk):
     return render(request, 'web_core/update_appointment.html', context)
 
 
-# import hashlib
-# import hmac
-# import json
-# import urllib
-# import urllib.parse
-# import urllib.request
-# import random
-# import requests
-# from datetime import datetime
-# from django.conf import settings
-# from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-# from django.shortcuts import render, redirect
-# from django.utils.http import urlquote
 
-# from vnpay_python.forms import PaymentForm
-# from vnpay_python.vnpay import vnpay
+# Thêm bệnh nhân từ lịch hẹn
+@login_required(login_url='login')
+def add_patient_from_appointment(request):
+    # Chỉ cho phép admin hoặc lễ tân thực hiện
+    if not admin_or_receptionist(request.user):
+        return HttpResponseForbidden("Bạn không có quyền truy cập chức năng này.")
+    
+    # Lọc ra các lịch hẹn của khách vãng lai (guest) chưa được xử lý
+    appointments = Appointment.objects.filter(user__groups__name='guest', status='pending')
 
+    if request.method == 'POST':
+        selected_ids = request.POST.getlist('selected_appointments')
+        
+        for appointment_id in selected_ids:
+            appointment = get_object_or_404(Appointment, id=appointment_id)
+            
+            # Kiểm tra bệnh nhân đã tồn tại dựa trên thông tin lịch hẹn
+            benhnhan_exists = BENHNHAN.objects.filter(
+                ho_ten=appointment.name,
+                ngay_sinh=appointment.date_of_birth
+            ).exists()
 
-# def index(request):
-#     return render(request, "index.html", {"title": "Danh sách demo"})
+            if not benhnhan_exists:
+                BENHNHAN.objects.create(
+                    ho_ten=appointment.name,
+                    ngay_sinh=appointment.date_of_birth,
+                    gioi_tinh="Chưa cập nhật",
+                    dia_chi="Chưa cập nhật",
+                    appointment=appointment  # Gắn lịch hẹn với bệnh nhân
+                )
+                # Đánh dấu lịch hẹn là hoàn thành
+                appointment.status = 'completed'
+                appointment.save()
+            else:
+                messages.warning(request, f"Bệnh nhân {appointment.name} đã tồn tại trong hệ thống.")
+        
+        messages.success(request, "Bệnh nhân đã được thêm vào danh sách.")
+        return redirect('dskb')
 
+    return render(request, 'web_core/add_patient_from_appointment.html', {'appointments': appointments})
 
-# def hmacsha512(key, data):
-#     byteKey = key.encode('utf-8')
-#     byteData = data.encode('utf-8')
-#     return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
-
-
-# def payment(request):
-
-#     if request.method == 'POST':
-#         # Process input data and build url payment
-#         form = PaymentForm(request.POST)
-#         if form.is_valid():
-#             order_type = form.cleaned_data['order_type']
-#             order_id = form.cleaned_data['order_id']
-#             amount = form.cleaned_data['amount']
-#             order_desc = form.cleaned_data['order_desc']
-#             bank_code = form.cleaned_data['bank_code']
-#             language = form.cleaned_data['language']
-#             ipaddr = get_client_ip(request)
-#             # Build URL Payment
-#             vnp = vnpay()
-#             vnp.requestData['vnp_Version'] = '2.1.0'
-#             vnp.requestData['vnp_Command'] = 'pay'
-#             vnp.requestData['vnp_TmnCode'] = settings.VNPAY_TMN_CODE
-#             vnp.requestData['vnp_Amount'] = amount * 100
-#             vnp.requestData['vnp_CurrCode'] = 'VND'
-#             vnp.requestData['vnp_TxnRef'] = order_id
-#             vnp.requestData['vnp_OrderInfo'] = order_desc
-#             vnp.requestData['vnp_OrderType'] = order_type
-#             # Check language, default: vn
-#             if language and language != '':
-#                 vnp.requestData['vnp_Locale'] = language
-#             else:
-#                 vnp.requestData['vnp_Locale'] = 'vn'
-#                 # Check bank_code, if bank_code is empty, customer will be selected bank on VNPAY
-#             if bank_code and bank_code != "":
-#                 vnp.requestData['vnp_BankCode'] = bank_code
-
-#             vnp.requestData['vnp_CreateDate'] = datetime.now().strftime('%Y%m%d%H%M%S')  # 20150410063022
-#             vnp.requestData['vnp_IpAddr'] = ipaddr
-#             vnp.requestData['vnp_ReturnUrl'] = settings.VNPAY_RETURN_URL
-#             vnpay_payment_url = vnp.get_payment_url(settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
-#             print(vnpay_payment_url)
-#             return redirect(vnpay_payment_url)
-#         else:
-#             print("Form input not validate")
-#     else:
-#         return render(request, "payment.html", {"title": "Thanh toán"})
+# @login_required(login_url='login')
+# @permission_required('myapp.manage_roles', raise_exception=True)
+# def role_list(request):
+#     roles = Role.objects.all()
+#     return render(request, 'web_core/role_list.html', {'roles': roles})
 
 
-# def payment_ipn(request):
-#     inputData = request.GET
-#     if inputData:
-#         vnp = vnpay()
-#         vnp.responseData = inputData.dict()
-#         order_id = inputData['vnp_TxnRef']
-#         amount = inputData['vnp_Amount']
-#         order_desc = inputData['vnp_OrderInfo']
-#         vnp_TransactionNo = inputData['vnp_TransactionNo']
-#         vnp_ResponseCode = inputData['vnp_ResponseCode']
-#         vnp_TmnCode = inputData['vnp_TmnCode']
-#         vnp_PayDate = inputData['vnp_PayDate']
-#         vnp_BankCode = inputData['vnp_BankCode']
-#         vnp_CardType = inputData['vnp_CardType']
-#         if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
-#             # Check & Update Order Status in your Database
-#             # Your code here
-#             firstTimeUpdate = True
-#             totalamount = True
-#             if totalamount:
-#                 if firstTimeUpdate:
-#                     if vnp_ResponseCode == '00':
-#                         print('Payment Success. Your code implement here')
-#                     else:
-#                         print('Payment Error. Your code implement here')
-
-#                     # Return VNPAY: Merchant update success
-#                     result = JsonResponse({'RspCode': '00', 'Message': 'Confirm Success'})
-#                 else:
-#                     # Already Update
-#                     result = JsonResponse({'RspCode': '02', 'Message': 'Order Already Update'})
-#             else:
-#                 # invalid amount
-#                 result = JsonResponse({'RspCode': '04', 'Message': 'invalid amount'})
-#         else:
-#             # Invalid Signature
-#             result = JsonResponse({'RspCode': '97', 'Message': 'Invalid Signature'})
-#     else:
-#         result = JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
-
-#     return result
+# Hàm kiểm tra vai trò Admin
+def is_admin(user):
+    return user.is_superuser or UserRole.objects.filter(user=user, role__name='Admin').exists()
 
 
-# def payment_return(request):
-#     inputData = request.GET
-#     if inputData:
-#         vnp = vnpay()
-#         vnp.responseData = inputData.dict()
-#         order_id = inputData['vnp_TxnRef']
-#         amount = int(inputData['vnp_Amount']) / 100
-#         order_desc = inputData['vnp_OrderInfo']
-#         vnp_TransactionNo = inputData['vnp_TransactionNo']
-#         vnp_ResponseCode = inputData['vnp_ResponseCode']
-#         vnp_TmnCode = inputData['vnp_TmnCode']
-#         vnp_PayDate = inputData['vnp_PayDate']
-#         vnp_BankCode = inputData['vnp_BankCode']
-#         vnp_CardType = inputData['vnp_CardType']
-#         if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
-#             if vnp_ResponseCode == "00":
-#                 return render(request, "payment_return.html", {"title": "Kết quả thanh toán",
-#                                                                "result": "Thành công", "order_id": order_id,
-#                                                                "amount": amount,
-#                                                                "order_desc": order_desc,
-#                                                                "vnp_TransactionNo": vnp_TransactionNo,
-#                                                                "vnp_ResponseCode": vnp_ResponseCode})
-#             else:
-#                 return render(request, "payment_return.html", {"title": "Kết quả thanh toán",
-#                                                                "result": "Lỗi", "order_id": order_id,
-#                                                                "amount": amount,
-#                                                                "order_desc": order_desc,
-#                                                                "vnp_TransactionNo": vnp_TransactionNo,
-#                                                                "vnp_ResponseCode": vnp_ResponseCode})
-#         else:
-#             return render(request, "payment_return.html",
-#                           {"title": "Kết quả thanh toán", "result": "Lỗi", "order_id": order_id, "amount": amount,
-#                            "order_desc": order_desc, "vnp_TransactionNo": vnp_TransactionNo,
-#                            "vnp_ResponseCode": vnp_ResponseCode, "msg": "Sai checksum"})
-#     else:
-#         return render(request, "payment_return.html", {"title": "Kết quả thanh toán", "result": ""})
+# Danh sách vai trò
+@login_required(login_url='login')
+def role_list(request):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền truy cập trang này.')
+        return redirect('home')
+
+    roles = Role.objects.all()
+    return render(request, 'web_core/role_list.html', {'roles': roles})
 
 
-# def get_client_ip(request):
-#     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-#     if x_forwarded_for:
-#         ip = x_forwarded_for.split(',')[0]
-#     else:
-#         ip = request.META.get('REMOTE_ADDR')
-#     return ip
+# Thêm vai trò
+@login_required(login_url='login')
+def add_role(request):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền thêm vai trò.')
+        return redirect('role_list')
 
-# n = random.randint(10**11, 10**12 - 1)
-# n_str = str(n)
-# while len(n_str) < 12:
-#     n_str = '0' + n_str
+    if request.method == 'POST':
+        role_name = request.POST['role_name']
+        Role.objects.create(name=role_name)
+        messages.success(request, 'Vai trò mới đã được thêm.')
+        return redirect('role_list')
+
+    return render(request, 'web_core/add_role.html')
 
 
-# def query(request):
-#     if request.method == 'GET':
-#         return render(request, "query.html", {"title": "Kiểm tra kết quả giao dịch"})
+# Chỉnh sửa vai trò
+@login_required(login_url='login')
+def edit_role(request, id):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền chỉnh sửa vai trò.')
+        return redirect('role_list')
 
-#     url = settings.VNPAY_API_URL
-#     secret_key = settings.VNPAY_HASH_SECRET_KEY
-#     vnp_TmnCode = settings.VNPAY_TMN_CODE
-#     vnp_Version = '2.1.0'
+    role = get_object_or_404(Role, id=id)
+    if request.method == 'POST':
+        role.name = request.POST['role_name']
+        role.save()
+        messages.success(request, 'Vai trò đã được cập nhật.')
+        return redirect('role_list')
 
-#     vnp_RequestId = n_str
-#     vnp_Command = 'querydr'
-#     vnp_TxnRef = request.POST['order_id']
-#     vnp_OrderInfo = 'kiem tra gd'
-#     vnp_TransactionDate = request.POST['trans_date']
-#     vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
-#     vnp_IpAddr = get_client_ip(request)
+    return render(request, 'web_core/edit_role.html', {'role': role})
 
-#     hash_data = "|".join([
-#         vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode,
-#         vnp_TxnRef, vnp_TransactionDate, vnp_CreateDate,
-#         vnp_IpAddr, vnp_OrderInfo
-#     ])
 
-#     secure_hash = hmac.new(secret_key.encode(), hash_data.encode(), hashlib.sha512).hexdigest()
+# Xóa vai trò
+@login_required(login_url='login')
+def delete_role(request, id):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền xóa vai trò.')
+        return redirect('role_list')
 
-#     data = {
-#         "vnp_RequestId": vnp_RequestId,
-#         "vnp_TmnCode": vnp_TmnCode,
-#         "vnp_Command": vnp_Command,
-#         "vnp_TxnRef": vnp_TxnRef,
-#         "vnp_OrderInfo": vnp_OrderInfo,
-#         "vnp_TransactionDate": vnp_TransactionDate,
-#         "vnp_CreateDate": vnp_CreateDate,
-#         "vnp_IpAddr": vnp_IpAddr,
-#         "vnp_Version": vnp_Version,
-#         "vnp_SecureHash": secure_hash
-#     }
+    role = get_object_or_404(Role, id=id)
+    if UserRole.objects.filter(role=role).exists():
+        messages.warning(request, 'Không thể xóa vai trò đang được gán cho người dùng.')
+    else:
+        role.delete()
+        messages.success(request, 'Vai trò đã được xóa.')
+    return redirect('role_list')
 
-#     headers = {"Content-Type": "application/json"}
 
-#     response = requests.post(url, headers=headers, data=json.dumps(data))
+# Gán vai trò cho người dùng
+@login_required(login_url='login')
+def assign_role(request, user_id):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền gán vai trò.')
+        return redirect('user_list')
 
-#     if response.status_code == 200:
-#         response_json = json.loads(response.text)
-#     else:
-#         response_json = {"error": f"Request failed with status code: {response.status_code}"}
+    user = get_object_or_404(User, id=user_id)
+    roles = Role.objects.all()
 
-#     return render(request, "query.html", {"title": "Kiểm tra kết quả giao dịch", "response_json": response_json})
+    if request.method == 'POST':
+        role_id = request.POST['role']
+        role = Role.objects.get(id=role_id)
+        UserRole.objects.update_or_create(user=user, defaults={'role': role})
+        messages.success(request, f'Vai trò "{role.name}" đã được gán cho {user.username}.')
+        return redirect('user_list')
 
-# def refund(request):
-#     if request.method == 'GET':
-#         return render(request, "refund.html", {"title": "Hoàn tiền giao dịch"})
+    return render(request, 'web_core/assign_role.html', {'user': user, 'roles': roles})
 
-#     url = settings.VNPAY_API_URL
-#     secret_key = settings.VNPAY_HASH_SECRET_KEY
-#     vnp_TmnCode = settings.VNPAY_TMN_CODE
-#     vnp_RequestId = n_str
-#     vnp_Version = '2.1.0'
-#     vnp_Command = 'refund'
-#     vnp_TransactionType = request.POST['TransactionType']
-#     vnp_TxnRef = request.POST['order_id']
-#     vnp_Amount = request.POST['amount']
-#     vnp_OrderInfo = request.POST['order_desc']
-#     vnp_TransactionNo = '0'
-#     vnp_TransactionDate = request.POST['trans_date']
-#     vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
-#     vnp_CreateBy = 'user01'
-#     vnp_IpAddr = get_client_ip(request)
 
-#     hash_data = "|".join([
-#         vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode, vnp_TransactionType, vnp_TxnRef,
-#         vnp_Amount, vnp_TransactionNo, vnp_TransactionDate, vnp_CreateBy, vnp_CreateDate,
-#         vnp_IpAddr, vnp_OrderInfo
-#     ])
+# Danh sách người dùng
+@login_required(login_url='login')
+def user_list(request):
+    users = User.objects.all()
+    return render(request, 'web_core/user_list.html', {'users': users})
 
-#     secure_hash = hmac.new(secret_key.encode(), hash_data.encode(), hashlib.sha512).hexdigest()
 
-#     data = {
-#         "vnp_RequestId": vnp_RequestId,
-#         "vnp_TmnCode": vnp_TmnCode,
-#         "vnp_Command": vnp_Command,
-#         "vnp_TxnRef": vnp_TxnRef,
-#         "vnp_Amount": vnp_Amount,
-#         "vnp_OrderInfo": vnp_OrderInfo,
-#         "vnp_TransactionDate": vnp_TransactionDate,
-#         "vnp_CreateDate": vnp_CreateDate,
-#         "vnp_IpAddr": vnp_IpAddr,
-#         "vnp_TransactionType": vnp_TransactionType,
-#         "vnp_TransactionNo": vnp_TransactionNo,
-#         "vnp_CreateBy": vnp_CreateBy,
-#         "vnp_Version": vnp_Version,
-#         "vnp_SecureHash": secure_hash
-#     }
+# Quản lý quyền của người dùng
+@login_required(login_url='login')
+def manage_user_permissions(request, user_id):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền quản lý quyền của người dùng.')
+        return redirect('user_list')
 
-#     headers = {"Content-Type": "application/json"}
+    user = get_object_or_404(User, id=user_id)
+    permissions = Permission.objects.all()
 
-#     response = requests.post(url, headers=headers, data=json.dumps(data))
+    if request.method == 'POST':
+        selected_permissions = request.POST.getlist('permissions')
+        user.user_permissions.set(selected_permissions)
+        messages.success(request, 'Quyền của người dùng đã được cập nhật.')
+        return redirect('user_list')
 
-#     if response.status_code == 200:
-#         response_json = json.loads(response.text)
-#     else:
-#         response_json = {"error": f"Request failed with status code: {response.status_code}"}
+    return render(request, 'web_core/manage_user_permissions.html', {'user': user, 'permissions': permissions})
 
-#     return render(request, "refund.html", {"title": "Kết quả hoàn tiền giao dịch", "response_json": response_json})
+
+# Quản lý quyền tổng thể (Cấp quyền trực tiếp cho chính mình)
+@login_required
+def manage_permissions(request):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền quản lý quyền.')
+        return redirect('home')
+
+    permissions = Permission.objects.all()
+
+    if request.method == 'POST':
+        selected_permissions = request.POST.getlist('permissions')
+        
+        # Thêm quyền mới
+        for perm_id in selected_permissions:
+            perm = Permission.objects.get(id=perm_id)
+            request.user.user_permissions.add(perm)
+        
+        messages.success(request, 'Quyền đã được cập nhật thành công.')
+        return redirect('manage_permissions')
+
+    context = {
+        'permissions': permissions,
+        'user_permissions': request.user.user_permissions.all()
+    }
+    return render(request, 'web_core/manage_permissions.html', context)

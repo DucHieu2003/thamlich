@@ -1,0 +1,22 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Quản lý Quyền Hạn</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="permissions">Chọn Quyền</label>
+        <select name="permissions" multiple class="form-control" size="10">
+            {% for perm in permissions %}
+            <option value="{{ perm.id }}" {% if perm in user_permissions %}selected{% endif %}>
+                {{ perm.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Cập Nhật Quyền</button>
+    <a href="{% url 'home' %}" class="btn btn-secondary">Quay lại</a>
+</form>
+
+{% endblock %}
