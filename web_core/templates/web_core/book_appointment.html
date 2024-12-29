@@ -1,10 +1,98 @@
 {% extends "web_core/base.html" %}
 
 {% block content %}
-<h2>Đặt lịch khám</h2>
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Đặt lịch</button>
-</form>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center">
+                    <h2 class="my-2">Đăng ký lịch khám</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="id_name" class="form-label fw-bold">Tên người khám</label>
+                            {{ form.name }}
+                            <div class="invalid-feedback">
+                                Vui lòng nhập tên người khám.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_date_of_birth" class="form-label fw-bold">Ngày sinh</label>
+                            {{ form.date_of_birth }}
+                            <div class="invalid-feedback">
+                                Vui lòng chọn ngày sinh.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_phone_number" class="form-label fw-bold">Số điện thoại</label>
+                            {{ form.phone_number }}
+                            <div class="invalid-feedback">
+                                Vui lòng nhập số điện thoại hợp lệ.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_date" class="form-label fw-bold">Ngày hẹn khám</label>
+                            {{ form.date }}
+                            <div class="invalid-feedback">
+                                Vui lòng chọn ngày hẹn khám.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_time" class="form-label fw-bold">Giờ hẹn khám</label>
+                            {{ form.time }}
+                            <div class="invalid-feedback">
+                                Vui lòng chọn giờ hẹn khám.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_reason" class="form-label fw-bold">Lý do khám (Không bắt buộc)</label>
+                            {{ form.reason }}
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary w-100 py-2">
+                                <i class="fas fa-calendar-check me-2"></i> Đặt lịch
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Nút quay lại trang chủ -->
+                    <div class="text-center mt-3">
+                        <a href="{% url 'home' %}" class="btn btn-secondary">
+                            <i class="fas fa-home me-2"></i> Về trang chủ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript để kiểm tra form -->
+<script>
+    (function() {
+        'use strict';
+        window.addEventListener('load', function() {
+            var forms = document.getElementsByClassName('needs-validation');
+            Array.prototype.filter.call(forms, function(form) {
+                form.addEventListener('submit', function(event) {
+                    if (form.checkValidity() === false) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    })();
+</script>
+
 {% endblock %}

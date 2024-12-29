@@ -1,40 +1,60 @@
 {% extends "web_core/base.html" %}
 
 {% block content %}
-<h2>Lịch khám của bạn</h2>
-<table border="1">
-    <thead>
-        <tr>
-            <th>Ngày khám</th>
-            <th>Giờ khám</th>
-            <th>Lý do khám</th>
-            <th>Hành động</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for appointment in appointments %}
-        <tr>
-            <td>{{ appointment.date }}</td>
-            <td>{{ appointment.time }}</td>
-            <td>{{ appointment.reason }}</td>
-            <td>
-                <a href="{% url 'update_appointment' appointment.pk %}" class="btn btn-warning">Cập nhật</a>
-                <a href="{% url 'delete_appointment' appointment.pk %}" 
-                   class="btn btn-danger" 
-                   onclick="return confirm('Bạn có chắc chắn muốn xóa lịch khám này?');">
-                   Xóa
-                </a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">Bạn chưa có lịch khám nào.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white text-center">
+                    <h2 class="my-2">Lịch khám của bạn</h2>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered text-center">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ngày khám</th>
+                                    <th>Giờ khám</th>
+                                    <th>Lý do khám</th>
+                                    <th>Tên</th>
+                                    <th>Số điện thoại</th>
+                                    <th>Ngày sinh</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr>
+                                    <td>{{ appointment.date|date:"M. d, Y" }}</td>
+                                    <td>{{ appointment.time|time:"g a" }}</td>
+                                    <td>{{ appointment.reason }}</td>
+                                    <td>{{ appointment.name }}</td>
+                                    <td>{{ appointment.phone_number }}</td>
+                                    <td>{{ appointment.date_of_birth|date:"M. d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'update_appointment' appointment.pk %}" class="btn btn-sm btn-warning">Cập nhật</a>
+                                        <a href="{% url 'delete_appointment' appointment.pk %}" class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Bạn có chắc muốn xóa không?');">Xóa</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        Không có lịch khám nào.
+                    </div>
+                    {% endif %}
 
-
-
-<a href="{% url 'book_appointment' %}" class="btn btn-primary">Đặt lịch khám mới</a>
+                    <div class="text-center mt-4">
+                        <a href="{% url 'book_appointment' %}" class="btn btn-primary">Đặt lịch khám mới</a>
+                        <a href="{% url 'home' %}" class="btn btn-secondary">Về trang chủ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -82,14 +82,13 @@ class RegisterForm(forms.ModelForm):
 class AppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
-        fields = ['date', 'time', 'reason']
+        fields = ['name', 'date_of_birth', 'phone_number', 'date', 'time', 'reason']
+        
         widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'time': forms.TimeInput(attrs={'type': 'time'}),
-            'reason': forms.Textarea(attrs={'rows': 3}),
-        }
-        labels = {
-            'date': 'Ngày khám',
-            'time': 'Giờ khám',
-            'reason': 'Lý do khám',
+            'date_of_birth': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nhập tên người khám'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nhập số điện thoại'}),
+            'reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Lý do khám (Không bắt buộc)'}),
         }

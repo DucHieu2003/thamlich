@@ -87,6 +87,11 @@ class THAMSO(models.Model):
     
 class Appointment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Người dùng")
+    name = models.CharField(max_length=100, default='Unknown')  # Đặt giá trị mặc định là "Unknown"
+
+    date_of_birth = models.DateField(default='2000-01-01')
+    phone_number = models.CharField(max_length=15, default='0000000000')
+
     date = models.DateField(verbose_name="Ngày khám")
     time = models.TimeField(verbose_name="Giờ khám")
     reason = models.TextField(verbose_name="Lý do khám", blank=True, null=True)
@@ -95,11 +100,11 @@ class Appointment(models.Model):
     def __str__(self):
         return f"Lịch khám: {self.user.username} - {self.date} {self.time}"
     
-class PaymentForm(forms.Form):
+# class PaymentForm(forms.Form):
 
-    order_id = forms.CharField(max_length=250)
-    order_type = forms.CharField(max_length=20)
-    amount = forms.IntegerField()
-    order_desc = forms.CharField(max_length=100)
-    bank_code = forms.CharField(max_length=20, required=False)
-    language = forms.CharField(max_length=2)
+#     order_id = forms.CharField(max_length=250)
+#     order_type = forms.CharField(max_length=20)
+#     amount = forms.IntegerField()
+#     order_desc = forms.CharField(max_length=100)
+#     bank_code = forms.CharField(max_length=20, required=False)
+#     language = forms.CharField(max_length=2)

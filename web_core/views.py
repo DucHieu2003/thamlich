@@ -27,6 +27,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from .forms import AppointmentForm
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponseForbidden
 
 # Create your views here.
 
@@ -38,7 +39,7 @@ def loginPage(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('/dskb')
+            return redirect('/')
         else:
             messages.info(request, 'Username or password was incorrect')
     return render(request, 'web_core/login.html')
@@ -53,8 +54,10 @@ def home(request):
 
 # Danh sách bệnh nhân
 @login_required(login_url='login')
-# @admin_only
 def dskb(request):
+    if not request.user.groups.filter(name__in=['admin', 'customer']).exists():
+        return HttpResponseForbidden("Bạn không có quyền truy cập vào trang này.")
+    
     max_benhnhan = THAMSO.objects.filter(loai='Số lượng bệnh nhân tối đa').first().now_value if THAMSO.objects.filter(loai='Số lượng bệnh nhân tối đa').exists() else 40
     today = dt.today().date()
     form = dskb_filter(request.POST or None)
@@ -476,7 +479,7 @@ def registerPage(request):
     context = {'form': form}
     return render(request, 'web_core/register.html', context)
 
-@login_required
+@login_required(login_url='login')
 def book_appointment(request):
     if request.method == 'POST':
         form = AppointmentForm(request.POST)
@@ -484,19 +487,32 @@ def book_appointment(request):
             appointment = form.save(commit=False)
             appointment.user = request.user
             appointment.save()
+            messages.success(request, "Lịch khám đã được đăng ký thành công!")
             return redirect('home')  
     else:
         form = AppointmentForm()
     return render(request, 'web_core/book_appointment.html', {'form': form})
 
-@login_required
+@login_required(login_url='login')
 def view_appointments(request):
-    # Lấy tất cả các lịch khám của người dùng hiện tại
-    appointments = Appointment.objects.filter(user=request.user)
+    # Kiểm tra nhóm người dùng
+    user_group = request.user.groups.first()
 
-    # Truyền dữ liệu lịch khám vào template
+    # Nếu là admin, lấy tất cả lịch khám
+    if user_group and user_group.name == 'admin':
+        appointments = Appointment.objects.all()
+
+    # Nếu là customer, lấy lịch của họ và của guest
+    elif user_group and user_group.name == 'customer':
+        appointments = Appointment.objects.filter(user=request.user) | Appointment.objects.filter(user__groups__name='guest')
+
+    # Nếu là guest, chỉ lấy lịch của chính họ
+    else:
+        appointments = Appointment.objects.filter(user=request.user)
+
     context = {'appointments': appointments}
     return render(request, 'web_core/view_appointments.html', context)
+
 
 @login_required
 def delete_appointment(request, pk):
@@ -506,9 +522,8 @@ def delete_appointment(request, pk):
     # Xóa lịch khám
     appointment.delete()
 
-    # Hiển thị thông báo hoặc chuyển hướng sau khi xóa
     messages.success(request, "Lịch khám đã được xóa thành công!")
-    return redirect('view_appointments')  # Điều hướng về danh sách lịch khám
+    return redirect('view_appointments')  
 
 @login_required
 def update_appointment(request, pk):

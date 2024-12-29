@@ -19,6 +19,12 @@
 
 <body>
   {% include 'web_core/navbar.html' %}
+  {% comment %} {% if request.resolver_match.url_name != 'login' %}
+  <nav class="navbar">
+    <!-- Nội dung thanh điều hướng -->
+  </nav>
+  {% endif %} {% endcomment %}
+
 
   <div class="container-fluid" style="margin-top:90px;">
 
@@ -89,7 +95,7 @@
   agent-id="7fdb514e-904d-46e3-bb5e-31e6c67d6a5c"
   language-code="en"
 ></df-messenger>
-<a href="{% url 'book_appointment' %}" class="btn btn-primary">Đặt lịch khám</a>
+{% comment %} <a href="{% url 'book_appointment' %}" class="btn btn-primary">Đặt lịch khám</a> {% endcomment %}
 
 
 </html>
