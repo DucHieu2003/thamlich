@@ -82,6 +82,30 @@
         color: #399; /* Màu giống mục được chọn */
         background-color: #fff; /* Nền trắng */
     }
+
+    .my-nav-item.payment {
+        background-color: transparent;  /* Nền trong suốt giống các mục khác */
+        color: #fff;  /* Màu chữ trắng */
+        font-weight: bold;
+        padding: 9.6px 16px;
+        text-transform: uppercase;
+        border-radius: 5px;
+        width: 120px;
+        text-align: center;
+    }
+    
+    .my-nav-item.payment:hover {
+        opacity: 0.7;
+        color: #fff;
+    }
+    
+    .my-nav-active.payment,
+    .my-nav-active.payment:hover {
+        color: #399;  /* Màu giống các mục đang active */
+        background-color: #fff;
+    }
+    
+    
     
     
 </style>
@@ -116,6 +140,16 @@
                     href="{% url 'role_list' %}">Vai trò</a>
             <a class="nav-item nav-link my-nav-item {% if url_name == 'user_list' %}my-nav-active{% endif %}"
                     href="{% url 'user_list' %}">Người dùng</a>
+
+                    
+                    <a class="nav-item nav-link my-nav-item payment {% if url_name == 'payment' %}my-nav-active{% endif %}" 
+                    href="{% url 'payment' %}">
+                    THANH TOÁN
+                </a>
+                
+                 
+                    
+                    
                  
 
         </div>

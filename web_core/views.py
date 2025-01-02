@@ -9,14 +9,14 @@ from django.contrib import messages
 from django.contrib.auth.models import Group
 
 from django.contrib.auth.decorators import login_required, permission_required
-from .decorators import admin_only
+from .decorators import admin_only, admincus_only, allowed_users
 
 #utils
 from datetime import datetime as dt
 from django.db.models import Count, Sum, F
 
 #forms import
-from .forms import benhnhan_form, phieukham_form, ThayDoiGiaTriForm, DanhMucForm, ThuocForm
+from .forms import benhnhan_form, phieukham_form, ThayDoiGiaTriForm, DanhMucForm, ThuocForm, DichVuForm
 from django.forms import inlineformset_factory
 
 #filters import
@@ -68,14 +68,15 @@ def home(request):
 # Danh sách bệnh nhân
 @login_required(login_url='login')
 def dskb(request):
-    if not request.user.groups.filter(name__in=['admin', 'customer']).exists():
-        return HttpResponseForbidden("Bạn không có quyền truy cập vào trang này.")
+    # if not request.user.groups.filter(name__in=['admin', 'customer']).exists():
+    #     return HttpResponseForbidden("Bạn không có quyền truy cập vào trang này.")
     
     max_benhnhan = THAMSO.objects.filter(loai='Số lượng bệnh nhân tối đa').first().now_value if THAMSO.objects.filter(loai='Số lượng bệnh nhân tối đa').exists() else 40
     today = dt.today().date()
     form = dskb_filter(request.POST or None)
     if form.is_valid() and form.cleaned_data.get('ngay_kham'):
-        today = dt.strptime(form.cleaned_data['ngay_kham'], '%d/%m/%Y').date()
+        today = form.cleaned_data['ngay_kham']
+
     phieukhams = PHIEUKHAM.objects.filter(ngay_kham__date=today)
     benhnhans = [BENHNHAN.objects.get(id=phieukham.id_benhnhan.id) for phieukham in phieukhams]
     context = {
@@ -87,13 +88,13 @@ def dskb(request):
     }
     return render(request, 'web_core/dskb.html', context)
 
-@admin_only
+@admincus_only
 def dsbn(request):
     dsbn = BENHNHAN.objects.all()
     context = {'dsbn': dsbn}
     return render(request, 'web_core/dsbn.html', context)
 
-@admin_only
+@admincus_only
 def add_benhnhan(request):
     form = benhnhan_form(request.POST or None)
     if form.is_valid():
@@ -110,7 +111,7 @@ def edit_benhnhan(request, id):
         return redirect('/dsbn')
     return render(request, 'web_core/edit_benhnhan.html', {'form': form})
 
-@admin_only
+@admincus_only
 def del_benhnhan(request, id):
     benhnhan = BENHNHAN.objects.get(id=id)
     if request.method == 'POST':
@@ -120,9 +121,22 @@ def del_benhnhan(request, id):
 
 @login_required(login_url='login')
 def xuathoadon(request):
-    phieukhams = PHIEUKHAM.objects.all()
-    enum_xhd = enumerate(phieukhams,start = 1)
-    context = {'phieukhams':phieukhams, 'enum_xhd':enum_xhd}
+    user = request.user
+    
+    # Kiểm tra nếu user thuộc group 'Admin' hoặc 'Customer'
+    if user.groups.filter(name__in=['admin', 'customer']).exists():
+        phieukhams = PHIEUKHAM.objects.all()  # Lấy tất cả hóa đơn
+    
+    # Nếu user thuộc group 'Guest', chỉ lấy hóa đơn của chính họ
+    elif user.groups.filter(name='guest').exists():
+        phieukhams = PHIEUKHAM.objects.filter(id_benhnhan=user)
+    
+    # Nếu không thuộc nhóm nào
+    else:
+        phieukhams = []  # Không trả về dữ liệu nếu không có quyền
+    
+    enum_xhd = enumerate(phieukhams, start=1)
+    context = {'phieukhams': phieukhams, 'enum_xhd': enum_xhd}
     return render(request, 'web_core/xuathoadon.html', context)
 
 @login_required(login_url='login')
@@ -167,6 +181,7 @@ def lsk_guest(request):
         
     context ={'lsk_guest': lsk_guest, 'myFilter':myFilter,'enum_lsk_guest':enum_lsk_guest}
     return render(request, 'web_core/lsk_guest.html',context)
+
 @login_required(login_url='login')
 def dspk(request):
     dspk = PHIEUKHAM.objects.all().order_by('-ngay_kham')
@@ -202,7 +217,7 @@ def add_phieukham(request):
     context = {'pk_form':pk_form, 'formset':formset}
     return render(request,'web_core/add_phieukham.html', context)
 
-@admin_only
+@admincus_only
 def edit_phieukham(request, id):
     sdtFormSet = inlineformset_factory(PHIEUKHAM, SUDUNGTHUOC, 
                  fields=('id_phieukham','thuoc', 'soluong', 'don_vi', 'cach_dung'), extra=10)
@@ -220,7 +235,7 @@ def edit_phieukham(request, id):
     context = {'pk_form':pk_form, 'formset':formset}
     return render(request,'web_core/edit_phieukham.html', context)
 
-@admin_only
+@admincus_only
 def del_phieukham(request, id):
     phieukham = PHIEUKHAM.objects.get(id=id)
     if request.method == 'POST':
@@ -331,7 +346,7 @@ def thaydoi_tienkham(request):
     context = {'form': form}
     return render(request, 'web_core/thaydoi_tienkham.html', context)
 
-@admin_only
+@admincus_only
 def thaydoi_loaibenh(request):
     dslb = DANHMUC.objects.filter(loai='Bệnh')
     context = {'dslb': dslb}
@@ -557,11 +572,12 @@ def update_appointment(request, pk):
 
 
 # Thêm bệnh nhân từ lịch hẹn
+@admincus_only
 @login_required(login_url='login')
 def add_patient_from_appointment(request):
     # Chỉ cho phép admin hoặc lễ tân thực hiện
-    if not admin_or_receptionist(request.user):
-        return HttpResponseForbidden("Bạn không có quyền truy cập chức năng này.")
+    # if not admin_or_receptionist(request.user):
+    #     return HttpResponseForbidden("Bạn không có quyền truy cập chức năng này.")
     
     # Lọc ra các lịch hẹn của khách vãng lai (guest) chưa được xử lý
     appointments = Appointment.objects.filter(user__groups__name='guest', status='pending')
@@ -613,8 +629,7 @@ def is_admin(user):
 @login_required(login_url='login')
 def role_list(request):
     if not is_admin(request.user):
-        messages.error(request, 'Bạn không có quyền truy cập trang này.')
-        return redirect('home')
+        return HttpResponseForbidden("Bạn không có quyền truy cập trang này.")
 
     roles = Role.objects.all()
     return render(request, 'web_core/role_list.html', {'roles': roles})
@@ -640,8 +655,7 @@ def add_role(request):
 @login_required(login_url='login')
 def edit_role(request, id):
     if not is_admin(request.user):
-        messages.error(request, 'Bạn không có quyền chỉnh sửa vai trò.')
-        return redirect('role_list')
+        return HttpResponseForbidden("Bạn không có quyền truy cập trang này.")
 
     role = get_object_or_404(Role, id=id)
     if request.method == 'POST':
@@ -689,10 +703,11 @@ def assign_role(request, user_id):
     return render(request, 'web_core/assign_role.html', {'user': user, 'roles': roles})
 
 
-# Danh sách người dùng
-@login_required(login_url='login')
-def user_list(request):
-    users = User.objects.all()
+def user_list(request): 
+    if not is_admin(request.user):
+        return HttpResponseForbidden("Bạn không có quyền truy cập trang này.")
+    
+    users = User.objects.all() 
     return render(request, 'web_core/user_list.html', {'users': users})
 
 
@@ -740,3 +755,328 @@ def manage_permissions(request):
         'user_permissions': request.user.user_permissions.all()
     }
     return render(request, 'web_core/manage_permissions.html', context)
+
+# Danh sách dịch vụ (Ai cũng xem được)
+@login_required
+def danh_sach_dich_vu(request):
+    dich_vu_list = DichVu.objects.all()
+    return render(request, 'web_core/danh_sach_dich_vu.html', {'dich_vu_list': dich_vu_list})
+
+# Thêm dịch vụ (Chỉ admin)
+@login_required
+def them_dich_vu(request):
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền thêm dịch vụ.')
+        return redirect('danh_sach_dich_vu')
+
+    if request.method == 'POST':
+        form = DichVuForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Dịch vụ đã được thêm thành công.')
+            return redirect('danh_sach_dich_vu')
+    else:
+        form = DichVuForm()
+    return render(request, 'web_core/them_dich_vu.html', {'form': form})
+
+# Cập nhật dịch vụ (Chỉ admin)
+@login_required
+def cap_nhat_dich_vu(request, pk):
+    dich_vu = get_object_or_404(DichVu, pk=pk)
+    
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền cập nhật dịch vụ.')
+        return redirect('danh_sach_dich_vu')
+
+    if request.method == 'POST':
+        form = DichVuForm(request.POST, instance=dich_vu)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Dịch vụ đã được cập nhật.')
+            return redirect('danh_sach_dich_vu')
+    else:
+        form = DichVuForm(instance=dich_vu)
+    return render(request, 'web_core/cap_nhat_dich_vu.html', {'form': form})
+
+# Xóa dịch vụ (Chỉ admin)
+@login_required
+def xoa_dich_vu(request, pk):
+    dich_vu = get_object_or_404(DichVu, pk=pk)
+    
+    if not is_admin(request.user):
+        messages.error(request, 'Bạn không có quyền xóa dịch vụ.')
+        return redirect('danh_sach_dich_vu')
+
+    if request.method == 'POST':
+        dich_vu.delete()
+        messages.success(request, 'Dịch vụ đã được xóa thành công.')
+        return redirect('danh_sach_dich_vu')
+
+    return render(request, 'web_core/xoa_dich_vu.html', {'dich_vu': dich_vu})
+
+def chat_view(request):
+    return render(request, 'web_core/chat.html')
+
+
+
+import hashlib
+import hmac
+import json
+import urllib
+import urllib.parse
+import urllib.request
+import random
+import requests
+from datetime import datetime
+from django.conf import settings
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render, redirect
+from urllib.parse import quote as urlquote  # Sửa lỗi urlquote
+
+from .models import PaymentForm
+from .vnpay import vnpay
+
+
+def index(request):
+    return render(request, "web_core/index.html", {"title": "Danh sách demo"})
+
+
+def hmacsha512(key, data):
+    byteKey = key.encode('utf-8')
+    byteData = data.encode('utf-8')
+    return hmac.new(byteKey, byteData, hashlib.sha512).hexdigest()
+
+
+def payment(request):
+    if request.method == 'POST':
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            order_type = form.cleaned_data['order_type']
+            order_id = form.cleaned_data['order_id']
+            amount = form.cleaned_data['amount']
+            order_desc = form.cleaned_data['order_desc']
+            bank_code = form.cleaned_data['bank_code']
+            language = form.cleaned_data['language']
+            ipaddr = get_client_ip(request)
+
+            vnp = vnpay()
+            vnp.requestData['vnp_Version'] = '2.1.0'
+            vnp.requestData['vnp_Command'] = 'pay'
+            vnp.requestData['vnp_TmnCode'] = settings.VNPAY_TMN_CODE
+            vnp.requestData['vnp_Amount'] = amount * 100
+            vnp.requestData['vnp_CurrCode'] = 'VND'
+            vnp.requestData['vnp_TxnRef'] = order_id
+            vnp.requestData['vnp_OrderInfo'] = order_desc
+            vnp.requestData['vnp_OrderType'] = order_type
+
+            if language and language != '':
+                vnp.requestData['vnp_Locale'] = language
+            else:
+                vnp.requestData['vnp_Locale'] = 'vn'
+
+            if bank_code and bank_code != "":
+                vnp.requestData['vnp_BankCode'] = bank_code
+
+            vnp.requestData['vnp_CreateDate'] = datetime.now().strftime('%Y%m%d%H%M%S')
+            vnp.requestData['vnp_IpAddr'] = ipaddr
+            vnp.requestData['vnp_ReturnUrl'] = settings.VNPAY_RETURN_URL
+            vnpay_payment_url = vnp.get_payment_url(settings.VNPAY_PAYMENT_URL, settings.VNPAY_HASH_SECRET_KEY)
+            print(vnpay_payment_url)
+            return redirect(vnpay_payment_url)
+        else:
+            print("Form input not validate")
+    else:
+        return render(request, "web_core/payment.html", {"title": "Thanh toán"})
+
+
+def payment_ipn(request):
+    inputData = request.GET
+    if inputData:
+        vnp = vnpay()
+        vnp.responseData = inputData.dict()
+        order_id = inputData['vnp_TxnRef']
+        amount = inputData['vnp_Amount']
+        order_desc = inputData['vnp_OrderInfo']
+        vnp_TransactionNo = inputData['vnp_TransactionNo']
+        vnp_ResponseCode = inputData['vnp_ResponseCode']
+        vnp_TmnCode = inputData['vnp_TmnCode']
+        vnp_PayDate = inputData['vnp_PayDate']
+        vnp_BankCode = inputData['vnp_BankCode']
+        vnp_CardType = inputData['vnp_CardType']
+
+        if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
+            firstTimeUpdate = True
+            totalamount = True
+            if totalamount:
+                if firstTimeUpdate:
+                    if vnp_ResponseCode == '00':
+                        print('Payment Success. Your code implement here')
+                    else:
+                        print('Payment Error. Your code implement here')
+                    result = JsonResponse({'RspCode': '00', 'Message': 'Confirm Success'})
+                else:
+                    result = JsonResponse({'RspCode': '02', 'Message': 'Order Already Update'})
+            else:
+                result = JsonResponse({'RspCode': '04', 'Message': 'invalid amount'})
+        else:
+            result = JsonResponse({'RspCode': '97', 'Message': 'Invalid Signature'})
+    else:
+        result = JsonResponse({'RspCode': '99', 'Message': 'Invalid request'})
+    return result
+
+
+def payment_return(request):
+    inputData = request.GET
+    if inputData:
+        vnp = vnpay()
+        vnp.responseData = inputData.dict()
+        order_id = inputData['vnp_TxnRef']
+        amount = int(inputData['vnp_Amount']) / 100
+        order_desc = inputData['vnp_OrderInfo']
+        vnp_TransactionNo = inputData['vnp_TransactionNo']
+        vnp_ResponseCode = inputData['vnp_ResponseCode']
+
+        if vnp.validate_response(settings.VNPAY_HASH_SECRET_KEY):
+            result = "Thành công" if vnp_ResponseCode == "00" else "Lỗi"
+            return render(request, "web_core/payment_return.html", {
+                "title": "Kết quả thanh toán",
+                "result": result,
+                "order_id": order_id,
+                "amount": amount,
+                "order_desc": order_desc,
+                "vnp_TransactionNo": vnp_TransactionNo,
+                "vnp_ResponseCode": vnp_ResponseCode
+            })
+        else:
+            return render(request, "web_core/payment_return.html", {
+                "title": "Kết quả thanh toán",
+                "result": "Lỗi",
+                "msg": "Sai checksum"
+            })
+    return render(request, "web_core/payment_return.html", {"title": "Kết quả thanh toán", "result": ""})
+
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
+n = random.randint(10**11, 10**12 - 1)
+n_str = str(n)
+while len(n_str) < 12:
+    n_str = '0' + n_str
+
+
+def query(request):
+    if request.method == 'GET':
+        return render(request, "web_core/query.html", {"title": "Kiểm tra kết quả giao dịch"})
+
+    url = settings.VNPAY_API_URL
+    secret_key = settings.VNPAY_HASH_SECRET_KEY
+    vnp_TmnCode = settings.VNPAY_TMN_CODE
+    vnp_Version = '2.1.0'
+
+    vnp_RequestId = n_str
+    vnp_Command = 'querydr'
+    vnp_TxnRef = request.POST['order_id']
+    vnp_OrderInfo = 'kiem tra gd'
+    vnp_TransactionDate = request.POST['trans_date']
+    vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
+    vnp_IpAddr = get_client_ip(request)
+
+    hash_data = "|".join([
+        vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode,
+        vnp_TxnRef, vnp_TransactionDate, vnp_CreateDate,
+        vnp_IpAddr, vnp_OrderInfo
+    ])
+
+    secure_hash = hmac.new(secret_key.encode(), hash_data.encode(), hashlib.sha512).hexdigest()
+
+    data = {
+        "vnp_RequestId": vnp_RequestId,
+        "vnp_TmnCode": vnp_TmnCode,
+        "vnp_Command": vnp_Command,
+        "vnp_TxnRef": vnp_TxnRef,
+        "vnp_OrderInfo": vnp_OrderInfo,
+        "vnp_TransactionDate": vnp_TransactionDate,
+        "vnp_CreateDate": vnp_CreateDate,
+        "vnp_IpAddr": vnp_IpAddr,
+        "vnp_Version": vnp_Version,
+        "vnp_SecureHash": secure_hash
+    }
+
+    headers = {"Content-Type": "application/json"}
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+
+    if response.status_code == 200:
+        response_json = json.loads(response.text)
+    else:
+        response_json = {"error": f"Request failed with status code: {response.status_code}"}
+
+    return render(request, "query.html", {"title": "Kiểm tra kết quả giao dịch", "response_json": response_json})
+
+def refund(request):
+    if request.method == 'GET':
+        return render(request, "web_core/refund.html", {"title": "Hoàn tiền giao dịch"})
+
+    url = settings.VNPAY_API_URL
+    secret_key = settings.VNPAY_HASH_SECRET_KEY
+    vnp_TmnCode = settings.VNPAY_TMN_CODE
+    vnp_RequestId = n_str
+    vnp_Version = '2.1.0'
+    vnp_Command = 'refund'
+    vnp_TransactionType = request.POST['TransactionType']
+    vnp_TxnRef = request.POST['order_id']
+    vnp_Amount = request.POST['amount']
+    vnp_OrderInfo = request.POST['order_desc']
+    vnp_TransactionNo = '0'
+    vnp_TransactionDate = request.POST['trans_date']
+    vnp_CreateDate = datetime.now().strftime('%Y%m%d%H%M%S')
+    vnp_CreateBy = 'user01'
+    vnp_IpAddr = get_client_ip(request)
+
+    hash_data = "|".join([
+        vnp_RequestId, vnp_Version, vnp_Command, vnp_TmnCode, vnp_TransactionType, vnp_TxnRef,
+        vnp_Amount, vnp_TransactionNo, vnp_TransactionDate, vnp_CreateBy, vnp_CreateDate,
+        vnp_IpAddr, vnp_OrderInfo
+    ])
+
+    secure_hash = hmac.new(secret_key.encode(), hash_data.encode(), hashlib.sha512).hexdigest()
+
+    data = {
+        "vnp_RequestId": vnp_RequestId,
+        "vnp_TmnCode": vnp_TmnCode,
+        "vnp_Command": vnp_Command,
+        "vnp_TxnRef": vnp_TxnRef,
+        "vnp_Amount": vnp_Amount,
+        "vnp_OrderInfo": vnp_OrderInfo,
+        "vnp_TransactionDate": vnp_TransactionDate,
+        "vnp_CreateDate": vnp_CreateDate,
+        "vnp_IpAddr": vnp_IpAddr,
+        "vnp_TransactionType": vnp_TransactionType,
+        "vnp_TransactionNo": vnp_TransactionNo,
+        "vnp_CreateBy": vnp_CreateBy,
+        "vnp_Version": vnp_Version,
+        "vnp_SecureHash": secure_hash
+    }
+
+    headers = {"Content-Type": "application/json"}
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+
+    if response.status_code == 200:
+        response_json = json.loads(response.text)
+    else:
+        response_json = {"error": f"Request failed with status code: {response.status_code}"}
+
+    return render(request, "web_core/refund.html", {"title": "Kết quả hoàn tiền giao dịch", "response_json": response_json})
+
+
+
+
+

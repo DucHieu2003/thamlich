@@ -1,0 +1,14 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Thêm Dịch Vụ Mới</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">Lưu</button>
+    <a href="{% url 'danh_sach_dich_vu' %}" class="btn btn-secondary">Hủy</a>
+</form>
+
+{% endblock %}

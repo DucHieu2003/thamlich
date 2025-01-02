@@ -29,6 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'clinic-web-project.herokuapp.com',
     '.vercel.app',
+    'localhost',
     '127.0.0.1'
 ]
 
@@ -36,6 +37,7 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'web_core',
-
+    'channels',
+    
     'django_filters',
     'shortuuid',
 ]
@@ -81,6 +84,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'clinic_web.wsgi.application'
+
+# Channels
+ASGI_APPLICATION = 'clinic_web.asgi.application'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+
+
 
 
 # Database
@@ -160,3 +177,9 @@ MEDIA_ROOT = BASE_DIR / 'web_core/static/images/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+VNPAY_RETURN_URL = 'http://localhost:8000/payment_return'  # get from config
+VNPAY_PAYMENT_URL = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'  # get from config
+VNPAY_API_URL = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
+VNPAY_TMN_CODE = 'GJJ4F2ZS'  # Website ID in VNPAY System, get from config
+VNPAY_HASH_SECRET_KEY = 'AW3AMDTGWYYVSA5DQLNZB903ICWYGHEL'  # Secret key for create checksum,get from config

@@ -74,11 +74,18 @@ urlpatterns = [
     # Trang phân quyền (Tùy chỉnh)
     path('permissions/', views.manage_permissions, name='manage_permissions'),  # Quản lý trực tiếp các quyền
     
-    # url('pay', views.index, name='index'),
-    # url('payment', views.payment, name='payment'),
-    # url('payment_ipn$', views.payment_ipn, name='payment_ipn'),
-    # url('payment_return$', views.payment_return, name='payment_return'),
-    # url('query$', views.query, name='query'),
-    # url('refund$', views.refund, name='refund'),
-    # url('admin/', site.urls),
+    path('dich-vu/', views.danh_sach_dich_vu, name='danh_sach_dich_vu'),
+
+    path('them-dich-vu/', views.them_dich_vu, name='them_dich_vu'),
+    path('cap-nhat-dich-vu/<int:pk>/', views.cap_nhat_dich_vu, name='cap_nhat_dich_vu'),
+    path('xoa-dich-vu/<int:pk>/', views.xoa_dich_vu, name='xoa_dich_vu'),
+    path('chat/', views.chat_view, name='chat'),
+    
+    path('pay', views.index, name='index'),
+    path('payment', views.payment, name='payment'),
+    path('payment_ipn', views.payment_ipn, name='payment_ipn'),
+    path('payment_return', views.payment_return, name='payment_return'),
+    path('query', views.query, name='query'),
+    path('refund', views.refund, name='refund'),
+    # path('admin/', site.urls),
 ]

@@ -1,0 +1,53 @@
+{% extends 'web_core/base.html' %}
+
+{% block content %}
+<h2>Chat thời gian thực</h2>
+<div id="chat-log" style="border: 1px solid #ddd; padding: 10px; height: 300px; overflow-y: auto;"></div>
+<input id="chat-message-input" type="text" style="width: 300px;">
+<button id="chat-message-submit">Gửi</button>
+
+<script>
+    // Kết nối WebSocket
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/'
+    );
+
+    // Khi kết nối thành công
+    chatSocket.onopen = function(e) {
+        console.log('WebSocket đã kết nối.');
+    };
+
+    // Khi nhận được tin nhắn
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log('Tin nhắn nhận được:', data.message);  // Log tin nhắn
+        document.querySelector('#chat-log').innerHTML += (data.message + '<br>');
+    };
+
+    // Khi WebSocket bị lỗi
+    chatSocket.onerror = function(e) {
+        console.error('Lỗi WebSocket:', e);
+    };
+
+    // Khi WebSocket đóng kết nối
+    chatSocket.onclose = function(e) {
+        console.error('WebSocket bị ngắt.');
+    };
+
+    // Xử lý khi ấn nút gửi tin nhắn
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+
+        if (message.trim() !== '') {
+            console.log('Đang gửi tin nhắn:', message);  // Log tin nhắn gửi đi
+            chatSocket.send(JSON.stringify({
+                'message': message
+            }));
+            messageInputDom.value = '';
+        } else {
+            console.log('Tin nhắn trống, không gửi.');
+        }
+    };
+</script>
+{% endblock %}

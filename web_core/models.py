@@ -183,3 +183,23 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.role.name}"
+
+class DichVu(models.Model):
+    ten_dich_vu = models.CharField(max_length=100)
+    gia = models.IntegerField()
+    mo_ta = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.ten_dich_vu
+    
+from django import forms
+
+
+class PaymentForm(forms.Form):
+
+    order_id = forms.CharField(max_length=250)
+    order_type = forms.CharField(max_length=20)
+    amount = forms.IntegerField()
+    order_desc = forms.CharField(max_length=100)
+    bank_code = forms.CharField(max_length=20, required=False)
+    language = forms.CharField(max_length=2)

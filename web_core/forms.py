@@ -208,3 +208,15 @@ class RoleForm(forms.ModelForm):
             raise ValidationError("Vai trò này đã tồn tại.")
         return name
 
+class DichVuForm(forms.ModelForm):
+
+    class Meta:
+        model = DichVu
+        fields = ['ten_dich_vu', 'gia', 'mo_ta']
+        labels = {
+            'ten_dich_vu': 'Tên dịch vụ',
+            'gia': 'Giá',
+            'mo_ta': 'Mô tả'
+        }
+        
+
